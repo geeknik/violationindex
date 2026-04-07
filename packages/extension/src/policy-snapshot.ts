@@ -1,4 +1,6 @@
 import { sha256 } from '@violation-index/shared/crypto';
+import type { PolicyClaim } from '@violation-index/shared/types';
+import { extractPolicyClaims } from './policy-analyzer.js';
 
 /** Common privacy policy URL paths to probe */
 const POLICY_PATHS = [
@@ -8,6 +10,9 @@ const POLICY_PATHS = [
   '/about/privacy',
   '/policies/privacy',
   '/privacy-policy.html',
+  '/cookie-policy',
+  '/cookies',
+  '/legal/cookies',
 ] as const;
 
 export interface LocalPolicySnapshot {
@@ -16,6 +21,10 @@ export interface LocalPolicySnapshot {
   readonly contentHash: string;
   readonly fetchedAt: string;
   readonly contentLength: number;
+  /** Structured claims extracted from the policy text */
+  readonly claimsExtracted: readonly PolicyClaim[];
+  /** Raw plaintext (kept in memory only, never sent to API) */
+  readonly plaintext: string;
 }
 
 /**
@@ -52,6 +61,7 @@ export async function snapshotPolicy(siteDomain: string): Promise<LocalPolicySna
       if (!looksLikePrivacyPolicy(plaintext)) continue;
 
       const contentHash = await sha256(plaintext);
+      const claimsExtracted = extractPolicyClaims(plaintext);
 
       return {
         siteDomain,
@@ -59,6 +69,8 @@ export async function snapshotPolicy(siteDomain: string): Promise<LocalPolicySna
         contentHash,
         fetchedAt: new Date().toISOString(),
         contentLength: plaintext.length,
+        claimsExtracted,
+        plaintext, // Kept in memory only — used for popup display, never sent to API
       };
     } catch {
       // Network error, timeout, etc. — try next path

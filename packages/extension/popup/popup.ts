@@ -66,6 +66,17 @@ async function loadTabData(): Promise<void> {
     const requests = await browser.runtime.sendMessage({ type: 'getPreConsentRequests' }) as CapturedRequest[];
     console.log('[popup] Got requests:', requests ? requests.length : 'null');
     renderViolations(requests || []);
+
+    // Load policy analysis
+    console.log('[popup] Requesting policy claims...');
+    var policyData = await browser.runtime.sendMessage({ type: 'getPolicyClaims' }) as {
+      claims: { category: string; subject: string | null; claim: string }[];
+      undisclosed: { subject: string | null; claim: string }[];
+      policyUrl: string | null;
+    } | null;
+    if (policyData) {
+      renderPolicyAnalysis(policyData);
+    }
   } catch (err) {
     statusEl.textContent = 'error';
     console.error('[popup] Failed to load tab data:', err);
@@ -124,6 +135,43 @@ submitBtn.addEventListener('click', async function() {
     }, 2000);
   }
 });
+
+function renderPolicyAnalysis(data: {
+  claims: { category: string; subject: string | null; claim: string }[];
+  undisclosed: { subject: string | null; claim: string }[];
+  policyUrl: string | null;
+}): void {
+  var section = document.getElementById('policy-section') as HTMLElement;
+  var linkEl = document.getElementById('policy-link') as HTMLElement;
+  var disclosedEl = document.getElementById('policy-disclosed') as HTMLElement;
+  var undisclosedEl = document.getElementById('policy-undisclosed') as HTMLElement;
+
+  var disclosed = data.claims.filter(function(c) { return c.category === 'tracker_disclosed'; });
+
+  if (disclosed.length === 0 && data.undisclosed.length === 0 && !data.policyUrl) {
+    return; // No policy data — don't show section
+  }
+
+  section.style.display = 'block';
+
+  if (data.policyUrl) {
+    linkEl.innerHTML = '📄 <a href="' + escapeHtml(data.policyUrl) + '" target="_blank" style="color:var(--blue)">' + escapeHtml(data.policyUrl.split('/').slice(0, 3).join('/') + '/...') + '</a>';
+  }
+
+  if (disclosed.length > 0) {
+    disclosedEl.innerHTML = disclosed.map(function(c) {
+      return '<div class="policy-item disclosed"><span class="tag">disclosed</span>' + escapeHtml(c.subject || '?') + '</div>';
+    }).join('');
+  }
+
+  if (data.undisclosed.length > 0) {
+    undisclosedEl.innerHTML = data.undisclosed.map(function(c) {
+      return '<div class="policy-item undisclosed"><span class="tag">undisclosed</span>' + escapeHtml(c.subject || '?') + '</div>';
+    }).join('');
+  } else if (disclosed.length > 0) {
+    undisclosedEl.innerHTML = '<div class="policy-item" style="color:var(--dim)">All observed trackers appear to be disclosed.</div>';
+  }
+}
 
 // Details button — open full record on violationindex.com
 detailsBtn.addEventListener('click', function() {

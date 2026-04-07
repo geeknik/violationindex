@@ -18,7 +18,14 @@ policySnapshotRoute.post(
     const db = c.env.DB;
 
     try {
-      const id = await insertPolicySnapshot(db, snapshot);
+      const id = await insertPolicySnapshot(db, {
+        siteDomain: snapshot.siteDomain,
+        policyUrl: snapshot.policyUrl,
+        contentHash: snapshot.contentHash,
+        fetchedAt: snapshot.fetchedAt,
+        contentLength: snapshot.contentLength,
+        claimsExtracted: snapshot.claimsExtracted ?? null,
+      });
 
       await appendAuditEntry(db, {
         action: 'policy_snapshot_created',
@@ -28,6 +35,7 @@ policySnapshotRoute.post(
         details: {
           siteDomain: snapshot.siteDomain,
           contentHash: snapshot.contentHash,
+          claimCount: snapshot.claimsExtracted?.length ?? 0,
         },
       });
 

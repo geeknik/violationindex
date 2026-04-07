@@ -5,6 +5,7 @@ import {
   updateConsentState,
   getTabSummary,
   getPreConsentRequests,
+  getTabRequests,
   getTabDomain,
   hasPreConsentViolations,
   enrichWithSentCookies,
@@ -15,11 +16,14 @@ import {
 import { storeEvidence } from './storage.js';
 import { submitEvidence, submitPolicySnapshot } from './api-client.js';
 import { snapshotPolicy } from './policy-snapshot.js';
-import type { ConsentState } from '@violation-index/shared/types';
+import { findUndisclosedTrackers } from './policy-analyzer.js';
+import type { ConsentState, PolicyClaim } from '@violation-index/shared/types';
 
 console.log('[consent.watch] Background script loaded');
 
 var policySnapshotCache = new Map<string, string | null>();
+/** Per-domain policy claims for popup display */
+var policyClaimsCache = new Map<string, { claims: PolicyClaim[]; undisclosed: PolicyClaim[]; policyUrl: string }>();
 
 // Navigation start → initialize tab tracking
 browser.webNavigation.onBeforeNavigate.addListener(function(details) {
@@ -42,7 +46,34 @@ browser.webNavigation.onCompleted.addListener(function(details) {
 
   snapshotPolicy(domain).then(function(snapshot) {
     if (snapshot) {
-      console.log('[consent.watch] Policy snapshot: ' + domain + ' hash=' + snapshot.contentHash.slice(0, 16) + '...');
+      console.log('[consent.watch] Policy snapshot: ' + domain + ' hash=' + snapshot.contentHash.slice(0, 16) + '... claims=' + snapshot.claimsExtracted.length);
+
+      // Log extracted claims
+      for (var ci = 0; ci < snapshot.claimsExtracted.length; ci++) {
+        var claim = snapshot.claimsExtracted[ci];
+        console.log('[consent.watch] Policy claim: [' + claim.category + '] ' + (claim.subject || 'general') + ' — ' + claim.claim.slice(0, 80) + '...');
+      }
+
+      // Find undisclosed trackers by comparing claims against observed requests
+      var observed = getTabRequests(details.tabId).map(function(r) {
+        return { name: r.trackerName, destination: r.destination };
+      });
+      var undisclosed = findUndisclosedTrackers(snapshot.claimsExtracted, observed);
+
+      if (undisclosed.length > 0) {
+        console.log('[consent.watch] UNDISCLOSED TRACKERS on ' + domain + ':');
+        for (var ui = 0; ui < undisclosed.length; ui++) {
+          console.log('[consent.watch]   ⚠ ' + undisclosed[ui].subject + ' — ' + undisclosed[ui].claim);
+        }
+      }
+
+      // Cache claims for popup display
+      policyClaimsCache.set(domain, {
+        claims: snapshot.claimsExtracted.slice(),
+        undisclosed: undisclosed,
+        policyUrl: snapshot.policyUrl,
+      });
+
       submitPolicySnapshot(snapshot).then(function(result) {
         if (result) {
           console.log('[consent.watch] Policy snapshot stored: id=' + result.id);
@@ -235,6 +266,25 @@ browser.runtime.onMessage.addListener(
       }).catch(function(err) {
         console.error('[consent.watch] Submit failed:', err);
         sendResponse({ accepted: 0, rejected: 0, errors: [String(err)] });
+      });
+      return true;
+    }
+
+    // Popup: request policy claims for the current tab's domain
+    if (msg['type'] === 'getPolicyClaims') {
+      browser.tabs.query({ active: true, currentWindow: true }).then(function(tabs) {
+        var tabUrl = tabs[0]?.url;
+        if (!tabUrl) {
+          sendResponse({ claims: [], undisclosed: [], policyUrl: null });
+          return;
+        }
+        try {
+          var domain = new URL(tabUrl).hostname.toLowerCase();
+          var cached = policyClaimsCache.get(domain);
+          sendResponse(cached || { claims: [], undisclosed: [], policyUrl: null });
+        } catch (e) {
+          sendResponse({ claims: [], undisclosed: [], policyUrl: null });
+        }
       });
       return true;
     }

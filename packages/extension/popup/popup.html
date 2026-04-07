@@ -101,6 +101,36 @@ body{
 .btn-primary:hover{opacity:.9}
 .btn:disabled{opacity:.4;cursor:default}
 
+.section-header{
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--white);
+  margin-bottom:4px;
+  padding-top:6px;
+  border-top:1px solid var(--border);
+}
+.policy-section{margin-bottom:8px}
+.policy-list{margin:4px 0;font-size:10px}
+.policy-item{
+  padding:3px 6px;
+  margin:2px 0;
+}
+.policy-item.disclosed{color:#4ade80}
+.policy-item.undisclosed{color:var(--accent);font-weight:600}
+.policy-item .tag{
+  display:inline-block;
+  padding:0 4px;
+  font-size:8px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  border-radius:2px;
+  margin-right:4px;
+}
+.policy-item.disclosed .tag{background:#14532d;color:#4ade80}
+.policy-item.undisclosed .tag{background:#450a0a;color:var(--accent)}
+
 .footer{
   margin-top:10px;
   padding-top:8px;
@@ -134,6 +164,13 @@ body{
 
 <div class="violations" id="violations">
   <div class="empty">No violations detected on this page.</div>
+</div>
+
+<div class="policy-section" id="policy-section" style="display:none">
+  <div class="section-header">Privacy Policy Analysis</div>
+  <div id="policy-link" style="font-size:9px;color:var(--dim);margin-bottom:4px"></div>
+  <div id="policy-disclosed" class="policy-list"></div>
+  <div id="policy-undisclosed" class="policy-list"></div>
 </div>
 
 <div class="actions">

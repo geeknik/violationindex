@@ -112,6 +112,18 @@ export interface IngestionResponse {
   readonly errors: readonly string[];
 }
 
+/** A structured claim extracted from a privacy policy */
+export interface PolicyClaim {
+  /** Category of the claim */
+  readonly category: 'tracker_disclosed' | 'tracker_undisclosed' | 'cookie_usage' | 'consent_mechanism' | 'data_collection' | 'third_party' | 'opt_out' | 'legal_basis';
+  /** The specific service or tracker this claim is about (null for general claims) */
+  readonly subject: string | null;
+  /** What the policy says — extracted quote or summary */
+  readonly claim: string;
+  /** Section of the policy where this was found */
+  readonly section: string | null;
+}
+
 /** SHA-256 hashed snapshot of a privacy policy */
 export interface PolicySnapshot {
   readonly id: string;
@@ -120,7 +132,7 @@ export interface PolicySnapshot {
   readonly contentHash: string;
   readonly fetchedAt: string;
   readonly contentLength: number;
-  readonly claimsExtracted: readonly string[] | null;
+  readonly claimsExtracted: readonly PolicyClaim[] | null;
 }
 
 /** Submission payload for policy snapshots */
@@ -130,6 +142,7 @@ export interface PolicySnapshotSubmission {
   readonly contentHash: string;
   readonly fetchedAt: string;
   readonly contentLength: number;
+  readonly claimsExtracted: readonly PolicyClaim[] | null;
 }
 
 /** Immutable, hash-chained audit log entry */

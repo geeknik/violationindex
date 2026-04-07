@@ -99,16 +99,18 @@ export async function insertPolicySnapshot(
     readonly contentHash: string;
     readonly fetchedAt: string;
     readonly contentLength: number;
+    readonly claimsExtracted?: readonly { category: string; subject: string | null; claim: string; section: string | null }[] | null;
   },
 ): Promise<string> {
   const id = generateId();
+  const claimsJson = snapshot.claimsExtracted ? JSON.stringify(snapshot.claimsExtracted) : null;
 
   // Use INSERT OR IGNORE with UNIQUE(content_hash, site_domain) constraint.
   // Atomic dedup — no TOCTOU race.
   const result = await db
     .prepare(
-      `INSERT OR IGNORE INTO policy_snapshots (id, site_domain, policy_url, content_hash, fetched_at, content_length)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT OR IGNORE INTO policy_snapshots (id, site_domain, policy_url, content_hash, fetched_at, content_length, claims_extracted)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       id,
@@ -117,15 +119,24 @@ export async function insertPolicySnapshot(
       snapshot.contentHash,
       snapshot.fetchedAt,
       snapshot.contentLength,
+      claimsJson,
     )
     .run();
 
   if (result.meta.changes === 0) {
-    // Already exists — return existing ID
+    // Already exists — return existing ID, but update claims if they weren't set before
     const existing = await db
-      .prepare('SELECT id FROM policy_snapshots WHERE content_hash = ? AND site_domain = ?')
+      .prepare('SELECT id, claims_extracted FROM policy_snapshots WHERE content_hash = ? AND site_domain = ?')
       .bind(snapshot.contentHash, snapshot.siteDomain)
-      .first<{ id: string }>();
+      .first<{ id: string; claims_extracted: string | null }>();
+
+    if (existing && !existing.claims_extracted && claimsJson) {
+      await db
+        .prepare('UPDATE policy_snapshots SET claims_extracted = ? WHERE id = ?')
+        .bind(claimsJson, existing.id)
+        .run();
+    }
+
     return existing?.id ?? id;
   }
 

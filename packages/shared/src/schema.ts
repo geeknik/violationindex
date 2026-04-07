@@ -53,12 +53,23 @@ export const evidenceBatchSchema = z.object({
   records: z.array(evidenceSubmissionSchema).min(1).max(100),
 }).strict();
 
+export const policyClaimSchema = z.object({
+  category: z.enum([
+    'tracker_disclosed', 'tracker_undisclosed', 'cookie_usage',
+    'consent_mechanism', 'data_collection', 'third_party', 'opt_out', 'legal_basis',
+  ]),
+  subject: z.string().max(200).nullable(),
+  claim: z.string().max(1000),
+  section: z.string().max(200).nullable(),
+}).strict();
+
 export const policySnapshotSubmissionSchema = z.object({
   siteDomain: z.string().min(3).max(253).regex(DOMAIN_PATTERN, 'Invalid domain format'),
   policyUrl: z.string().url().max(2048),
   contentHash: z.string().regex(SHA256_PATTERN, 'Must be SHA-256 hex'),
   fetchedAt: z.string().regex(ISO8601_PATTERN, 'Must be ISO 8601 UTC'),
   contentLength: z.number().int().min(1).max(10_000_000),
+  claimsExtracted: z.array(policyClaimSchema).max(100).nullable().default(null),
 }).strict();
 
 export const auditQuerySchema = z.object({

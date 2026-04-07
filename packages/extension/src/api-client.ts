@@ -91,10 +91,20 @@ export async function submitPolicySnapshot(
   snapshot: PolicySnapshotSubmission | LocalPolicySnapshot,
 ): Promise<{ id: string } | null> {
   try {
+    // Send only the API-safe fields (exclude plaintext which is local-only)
+    var payload: Record<string, unknown> = {
+      siteDomain: snapshot.siteDomain,
+      policyUrl: snapshot.policyUrl,
+      contentHash: snapshot.contentHash,
+      fetchedAt: snapshot.fetchedAt,
+      contentLength: snapshot.contentLength,
+      claimsExtracted: ('claimsExtracted' in snapshot && snapshot.claimsExtracted) ? snapshot.claimsExtracted : null,
+    };
+
     var response = await fetch(API_BASE + '/api/v1/policy-snapshot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(snapshot),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(15000),
     });
 
