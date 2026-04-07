@@ -279,6 +279,62 @@ function finalizeDetection(): void {
   notifyBackground();
 }
 
+/**
+ * Find the privacy policy URL by scanning <a> elements in the page.
+ * Most sites link to their policy from the footer — this avoids blind URL probing.
+ */
+function findPolicyUrl(): string | null {
+  var links = document.querySelectorAll('a[href]');
+  var candidates: { url: string; score: number }[] = [];
+
+  for (var i = 0; i < links.length; i++) {
+    var a = links[i] as HTMLAnchorElement;
+    var href = a.href;
+    var text = (a.textContent || '').toLowerCase().trim();
+    var hrefLower = href.toLowerCase();
+
+    // Skip empty, javascript:, mailto:, anchor-only links
+    if (!href || href.startsWith('javascript:') || href.startsWith('mailto:') || href === '#') continue;
+
+    var score = 0;
+
+    // Score by link text
+    if (text === 'privacy policy' || text === 'privacy') score += 10;
+    if (text.indexOf('privacy policy') !== -1) score += 8;
+    if (text.indexOf('privacy') !== -1 && text.indexOf('policy') !== -1) score += 7;
+    if (text === 'cookie policy') score += 6;
+    if (text.indexOf('privacy notice') !== -1) score += 6;
+    if (text.indexOf('privacy') !== -1) score += 4;
+    if (text.indexOf('data protection') !== -1) score += 4;
+
+    // Score by URL path
+    if (hrefLower.indexOf('/privacy-policy') !== -1) score += 5;
+    if (hrefLower.indexOf('/privacy') !== -1) score += 3;
+    if (hrefLower.indexOf('/cookie-policy') !== -1) score += 3;
+    if (hrefLower.indexOf('/legal/privacy') !== -1) score += 3;
+    if (hrefLower.indexOf('/datenschutz') !== -1) score += 3; // German
+    if (hrefLower.indexOf('/politique-de-confidentialite') !== -1) score += 3; // French
+
+    if (score > 0) {
+      candidates.push({ url: href, score: score });
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Return the highest-scoring link
+  candidates.sort(function(a, b) { return b.score - a.score; });
+  return candidates[0].url;
+}
+
+// Listen for policy URL request from background script
+browser.runtime.onMessage.addListener(function(message: unknown) {
+  if (typeof message === 'object' && message !== null && (message as Record<string, unknown>)['type'] === 'findPolicyUrl') {
+    return Promise.resolve(findPolicyUrl());
+  }
+  return false;
+});
+
 // Run detection immediately (document_start)
 runDetection();
 

@@ -44,7 +44,7 @@ browser.webNavigation.onCompleted.addListener(function(details) {
   console.log('[consent.watch] Snapshotting policy for: ' + domain);
   policySnapshotCache.set(domain, null);
 
-  snapshotPolicy(domain).then(function(snapshot) {
+  snapshotPolicy(domain, details.tabId).then(function(snapshot) {
     if (snapshot) {
       console.log('[consent.watch] Policy snapshot: ' + domain + ' hash=' + snapshot.contentHash.slice(0, 16) + '... claims=' + snapshot.claimsExtracted.length);
 

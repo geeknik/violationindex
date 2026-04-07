@@ -2,17 +2,13 @@ import { sha256 } from '@violation-index/shared/crypto';
 import type { PolicyClaim } from '@violation-index/shared/types';
 import { extractPolicyClaims } from './policy-analyzer.js';
 
-/** Common privacy policy URL paths to probe */
-const POLICY_PATHS = [
+/**
+ * Fallback paths — only used if the content script didn't find a policy link in the DOM.
+ * Kept minimal to avoid unnecessary requests.
+ */
+const FALLBACK_PATHS = [
   '/privacy-policy',
   '/privacy',
-  '/legal/privacy',
-  '/about/privacy',
-  '/policies/privacy',
-  '/privacy-policy.html',
-  '/cookie-policy',
-  '/cookies',
-  '/legal/cookies',
 ] as const;
 
 export interface LocalPolicySnapshot {
@@ -29,81 +25,107 @@ export interface LocalPolicySnapshot {
 
 /**
  * Attempt to find and snapshot a site's privacy policy.
- * Probes common policy URL paths, fetches the content,
- * strips HTML, and returns a SHA-256 hash.
  *
- * No content is stored — only the hash for chain of custody.
+ * Strategy (ordered by intelligence):
+ * 1. Ask the content script to find a privacy policy link in the page DOM.
+ *    Most sites link to their policy from the footer — this avoids any blind probing.
+ * 2. If no link found, try 2 common fallback paths.
+ *
+ * Fetches the content, strips HTML, extracts structured claims,
+ * and returns a SHA-256 hash. No raw content is stored server-side.
  */
-export async function snapshotPolicy(siteDomain: string): Promise<LocalPolicySnapshot | null> {
-  const baseUrl = `https://${siteDomain}`;
-
-  for (const path of POLICY_PATHS) {
-    const url = `${baseUrl}${path}`;
+export async function snapshotPolicy(
+  siteDomain: string,
+  tabId?: number,
+): Promise<LocalPolicySnapshot | null> {
+  // Strategy 1: Ask the content script for the policy URL
+  if (tabId !== undefined) {
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        redirect: 'follow',
-        signal: AbortSignal.timeout(10_000),
-      });
-
-      if (!response.ok) continue;
-
-      const contentType = response.headers.get('content-type') ?? '';
-      if (!contentType.includes('text/html') && !contentType.includes('text/plain')) continue;
-
-      const html = await response.text();
-      if (html.length < 200) continue; // Too short to be a real policy
-
-      const plaintext = stripHtml(html);
-      if (plaintext.length < 100) continue;
-
-      // Check if this actually looks like a privacy policy
-      if (!looksLikePrivacyPolicy(plaintext)) continue;
-
-      const contentHash = await sha256(plaintext);
-      const claimsExtracted = extractPolicyClaims(plaintext);
-
-      return {
-        siteDomain,
-        policyUrl: response.url, // Use final URL after redirects
-        contentHash,
-        fetchedAt: new Date().toISOString(),
-        contentLength: plaintext.length,
-        claimsExtracted,
-        plaintext, // Kept in memory only — used for popup display, never sent to API
-      };
-    } catch {
-      // Network error, timeout, etc. — try next path
-      continue;
+      var domUrl = await browser.tabs.sendMessage(tabId, { type: 'findPolicyUrl' }) as string | null;
+      if (domUrl) {
+        console.log('[consent.watch] Policy URL found in DOM: ' + domUrl);
+        var result = await fetchAndAnalyze(siteDomain, domUrl);
+        if (result) return result;
+      }
+    } catch (e) {
+      // Content script may not be ready or tab may be restricted
     }
+  }
+
+  // Strategy 2: Minimal fallback probing (2 paths only)
+  var baseUrl = 'https://' + siteDomain;
+  for (var i = 0; i < FALLBACK_PATHS.length; i++) {
+    var url = baseUrl + FALLBACK_PATHS[i];
+    var result2 = await fetchAndAnalyze(siteDomain, url);
+    if (result2) return result2;
   }
 
   return null;
 }
 
+/**
+ * Fetch a URL, verify it's a privacy policy, strip HTML, extract claims.
+ */
+async function fetchAndAnalyze(
+  siteDomain: string,
+  url: string,
+): Promise<LocalPolicySnapshot | null> {
+  try {
+    var response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!response.ok) return null;
+
+    var contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('text/html') && !contentType.includes('text/plain')) return null;
+
+    var html = await response.text();
+    if (html.length < 200) return null;
+
+    var plaintext = stripHtml(html);
+    if (plaintext.length < 100) return null;
+
+    if (!looksLikePrivacyPolicy(plaintext)) return null;
+
+    var contentHash = await sha256(plaintext);
+    var claimsExtracted = extractPolicyClaims(plaintext);
+
+    return {
+      siteDomain: siteDomain,
+      policyUrl: response.url,
+      contentHash: contentHash,
+      fetchedAt: new Date().toISOString(),
+      contentLength: plaintext.length,
+      claimsExtracted: claimsExtracted,
+      plaintext: plaintext,
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 /** Strip HTML tags and normalize whitespace */
 function stripHtml(html: string): string {
-  // Remove script and style contents
-  let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  var text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-  // Remove all HTML tags
   text = text.replace(/<[^>]+>/g, ' ');
-  // Decode common HTML entities
   text = text.replace(/&amp;/g, '&');
   text = text.replace(/&lt;/g, '<');
   text = text.replace(/&gt;/g, '>');
   text = text.replace(/&quot;/g, '"');
   text = text.replace(/&#39;/g, "'");
   text = text.replace(/&nbsp;/g, ' ');
-  // Normalize whitespace
   text = text.replace(/\s+/g, ' ').trim();
   return text;
 }
 
 /** Basic heuristic: does this text look like a privacy policy? */
 function looksLikePrivacyPolicy(text: string): boolean {
-  const lower = text.toLowerCase();
-  const signals = [
+  var lower = text.toLowerCase();
+  var signals = [
     'privacy policy',
     'personal data',
     'personal information',
@@ -118,6 +140,9 @@ function looksLikePrivacyPolicy(text: string): boolean {
     'california consumer',
   ];
 
-  const matchCount = signals.filter((s) => lower.includes(s)).length;
+  var matchCount = 0;
+  for (var i = 0; i < signals.length; i++) {
+    if (lower.indexOf(signals[i]) !== -1) matchCount++;
+  }
   return matchCount >= 3;
 }
