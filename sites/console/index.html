@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Violation Index — Analyst Console</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--surface:#111;--border:#1a1a1a;--border-hover:#2a2a2a;
+  --text:#c8c8c8;--dim:#666;--white:#e8e8e8;
+  --accent:#d42020;--accent-dim:#6b1010;
+  --green:#22c55e;--yellow:#eab308;--blue:#3b82f6;
+  --mono:'SF Mono','Cascadia Code','Fira Code','Consolas',monospace;
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);line-height:1.5;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--white)}
+
+.top-bar{
+  border-bottom:1px solid var(--border);padding:.75rem 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.top-bar-title{font-weight:700;color:var(--white);font-size:1rem}
+.top-bar-status{font-size:.75rem;color:var(--dim)}
+
+.auth-gate{max-width:400px;margin:4rem auto;padding:2rem;text-align:center}
+.auth-gate input{
+  width:100%;padding:.5rem;margin:.75rem 0;
+  background:var(--surface);border:1px solid var(--border);color:var(--white);
+  font-family:var(--mono);font-size:.875rem;
+}
+.auth-gate button{
+  padding:.5rem 1.5rem;background:var(--accent);color:#fff;border:none;
+  font-family:var(--mono);cursor:pointer;font-size:.875rem;
+}
+
+.tabs{
+  display:flex;border-bottom:1px solid var(--border);padding:0 1.5rem;
+}
+.tab{
+  padding:.5rem 1rem;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;
+  font-size:.8125rem;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+.panel{display:none;padding:1.5rem}
+.panel.active{display:block}
+
+.stats{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);padding:1rem;min-width:140px;
+}
+.stat-label{font-size:.625rem;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)}
+.stat-value{font-size:1.5rem;font-weight:700;color:var(--white);margin-top:.25rem}
+.stat-value.alert{color:var(--accent)}
+.stat-value.ok{color:var(--green)}
+
+table{width:100%;border-collapse:collapse;font-size:.8125rem}
+th{
+  text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--border);
+  font-size:.625rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);
+}
+td{padding:.5rem .75rem;border-bottom:1px solid var(--border)}
+tr:hover{background:var(--surface)}
+
+.badge{
+  display:inline-block;padding:.125rem .5rem;font-size:.6875rem;
+  border:1px solid var(--border);
+}
+.badge-high{color:var(--accent);border-color:var(--accent-dim)}
+.badge-medium{color:var(--yellow);border-color:#6b5a08}
+.badge-active{color:var(--green);border-color:#166534}
+.badge-unreviewed{color:var(--dim);border-color:var(--border)}
+
+.btn{
+  padding:.25rem .75rem;border:1px solid var(--border);background:var(--surface);
+  color:var(--text);font-family:var(--mono);font-size:.75rem;cursor:pointer;
+}
+.btn:hover{border-color:var(--dim)}
+.btn-confirm{color:var(--green);border-color:#166534}
+.btn-confirm:hover{background:#166534;color:#fff}
+.btn-reject{color:var(--accent);border-color:var(--accent-dim)}
+.btn-reject:hover{background:var(--accent-dim);color:#fff}
+.btn-evaluate{
+  padding:.5rem 1.5rem;background:var(--accent);color:#fff;border:none;
+  font-family:var(--mono);font-size:.875rem;cursor:pointer;margin-bottom:1rem;
+}
+.btn-evaluate:hover{opacity:.9}
+.btn-evaluate:disabled{opacity:.4;cursor:default}
+
+.clock{font-variant-numeric:tabular-nums;color:var(--accent)}
+.clock-expired{color:var(--accent);font-weight:700}
+.clock-ok{color:var(--green)}
+
+.section-label{
+  font-size:.625rem;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--accent);margin:1.5rem 0 .75rem;
+}
+
+.empty{color:var(--dim);padding:2rem;text-align:center;font-size:.875rem}
+.log{font-size:.75rem;color:var(--dim);margin-top:1rem;max-height:200px;overflow-y:auto;padding:.5rem;background:var(--surface);border:1px solid var(--border)}
+.log-entry{padding:.125rem 0}
+
+@media(max-width:768px){
+  .stats{flex-direction:column}
+  table{font-size:.75rem}
+  .panel{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="top-bar-title">VIOLATION INDEX — ANALYST CONSOLE</span>
+  <span class="top-bar-status" id="conn-status">disconnected</span>
+</div>
+
+<!-- Auth gate -->
+<div id="auth-gate" class="auth-gate">
+  <div style="margin-bottom:1rem;color:var(--white)">Analyst Authentication</div>
+  <input type="password" id="token-input" placeholder="Bearer token">
+  <br>
+  <button onclick="authenticate()">Connect</button>
+</div>
+
+<!-- Main console (hidden until authed) -->
+<div id="console" style="display:none">
+  <div class="tabs">
+    <div class="tab active" data-panel="dashboard">Dashboard</div>
+    <div class="tab" data-panel="evidence">Evidence</div>
+    <div class="tab" data-panel="violations">Violations</div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="stats" id="dashboard-stats"></div>
+
+    <div class="section-label">Contradiction Engine</div>
+    <button class="btn-evaluate" id="evaluate-btn" onclick="runEvaluation()">Run Rules Evaluation</button>
+    <div class="log" id="eval-log" style="display:none"></div>
+  </div>
+
+  <!-- Evidence -->
+  <div class="panel" id="panel-evidence">
+    <div class="section-label">Evidence Records</div>
+    <div id="evidence-table-container"><div class="empty">Loading...</div></div>
+  </div>
+
+  <!-- Violations -->
+  <div class="panel" id="panel-violations">
+    <div class="section-label">Violations</div>
+    <div id="violations-table-container"><div class="empty">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+var API = 'https://api.violationindex.com/api/v1';
+var TOKEN = '';
+
+function headers() {
+  return { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+}
+
+function authenticate() {
+  TOKEN = document.getElementById('token-input').value.trim();
+  if (!TOKEN) return;
+
+  fetch(API + '/evidence/summary', { headers: headers() })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Auth failed: ' + r.status);
+      return r.json();
+    })
+    .then(function() {
+      document.getElementById('auth-gate').style.display = 'none';
+      document.getElementById('console').style.display = 'block';
+      document.getElementById('conn-status').textContent = 'connected';
+      document.getElementById('conn-status').style.color = '#22c55e';
+      loadDashboard();
+      loadEvidence();
+      loadViolations();
+    })
+    .catch(function(err) {
+      alert('Authentication failed: ' + err.message);
+    });
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+  });
+});
+
+function loadDashboard() {
+  fetch(API + '/evidence/summary', { headers: headers() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var s = data.summary;
+      document.getElementById('dashboard-stats').innerHTML =
+        statCard('Unreviewed', s.unreviewed || 0, s.unreviewed > 0 ? 'alert' : '') +
+        statCard('Confirmed', s.confirmed || 0, 'ok') +
+        statCard('Total Evidence', s.total || 0, '') +
+        statCard('Domains', s.domains || 0, '') +
+        statCard('Sessions', s.sessions || 0, '');
+    });
+
+  fetch(API + '/violations?status=active', { headers: headers() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var existing = document.querySelector('#dashboard-stats .stat-active-violations');
+      if (!existing) {
+        document.getElementById('dashboard-stats').insertAdjacentHTML('beforeend',
+          '<div class="stat-card stat-active-violations">' +
+          '<div class="stat-label">Active Violations</div>' +
+          '<div class="stat-value alert">' + data.violations.length + '</div></div>');
+      }
+    });
+}
+
+function statCard(label, value, cls) {
+  return '<div class="stat-card"><div class="stat-label">' + label +
+    '</div><div class="stat-value ' + cls + '">' + value + '</div></div>';
+}
+
+function loadEvidence() {
+  fetch(API + '/evidence?limit=100', { headers: headers() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.evidence.length === 0) {
+        document.getElementById('evidence-table-container').innerHTML = '<div class="empty">No evidence records.</div>';
+        return;
+      }
+      var html = '<table><thead><tr><th>Domain</th><th>Destination</th><th>Type</th><th>Consent</th><th>Observed</th><th>Status</th></tr></thead><tbody>';
+      data.evidence.forEach(function(e) {
+        html += '<tr>' +
+          '<td>' + esc(e.site_domain) + '</td>' +
+          '<td>' + esc(e.request_destination) + '</td>' +
+          '<td>' + esc(e.request_type) + '</td>' +
+          '<td><span class="badge badge-' + (e.consent_state === 'pre_consent' ? 'high' : 'unreviewed') + '">' + esc(e.consent_state) + '</span></td>' +
+          '<td>' + formatTime(e.observed_at) + '</td>' +
+          '<td><span class="badge badge-' + esc(e.status) + '">' + esc(e.status) + '</span></td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('evidence-table-container').innerHTML = html;
+    });
+}
+
+function loadViolations() {
+  fetch(API + '/violations', { headers: headers() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.violations.length === 0) {
+        document.getElementById('violations-table-container').innerHTML = '<div class="empty">No violations. Run the rules evaluation to detect candidates.</div>';
+        return;
+      }
+      var html = '<table><thead><tr><th>Domain</th><th>Type</th><th>Severity</th><th>Evidence</th><th>Clock</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+      data.violations.forEach(function(v) {
+        var clockHtml = '';
+        if (v.clock_started_at && v.status === 'active') {
+          clockHtml = renderClock(v.response_deadline);
+        } else if (v.status === 'unreviewed') {
+          clockHtml = '<span class="badge badge-unreviewed">pending</span>';
+        } else {
+          clockHtml = v.status;
+        }
+
+        var actions = '';
+        if (v.status === 'unreviewed') {
+          actions = '<button class="btn btn-confirm" onclick="confirmViolation(\'' + v.id + '\')">Confirm</button> ' +
+                    '<button class="btn btn-reject" onclick="rejectViolation(\'' + v.id + '\')">Reject</button>';
+        } else if (v.status === 'active') {
+          actions = '<button class="btn" onclick="updateStatus(\'' + v.id + '\', \'remediated\')">Remediated</button> ' +
+                    '<button class="btn" onclick="updateStatus(\'' + v.id + '\', \'escalated_tier2\')">Escalate</button>';
+        }
+
+        html += '<tr>' +
+          '<td>' + esc(v.site_domain) + '</td>' +
+          '<td>' + esc(v.violation_type) + '</td>' +
+          '<td><span class="badge badge-' + esc(v.severity) + '">' + esc(v.severity) + '</span></td>' +
+          '<td>' + v.evidence_count + '</td>' +
+          '<td>' + clockHtml + '</td>' +
+          '<td><span class="badge badge-' + esc(v.status) + '">' + esc(v.status) + '</span></td>' +
+          '<td>' + actions + '</td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('violations-table-container').innerHTML = html;
+    });
+}
+
+function runEvaluation() {
+  var btn = document.getElementById('evaluate-btn');
+  var log = document.getElementById('eval-log');
+  btn.disabled = true;
+  btn.textContent = 'Evaluating...';
+  log.style.display = 'block';
+  log.innerHTML = '<div class="log-entry">Running contradiction rules...</div>';
+
+  fetch(API + '/rules/evaluate', { method: 'POST', headers: headers() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Run Rules Evaluation';
+
+      if (data.candidates.length === 0) {
+        log.innerHTML += '<div class="log-entry">No new violations detected.</div>';
+      } else {
+        log.innerHTML += '<div class="log-entry">' + data.created + ' new violation(s) created:</div>';
+        data.candidates.forEach(function(c) {
+          log.innerHTML += '<div class="log-entry">  ' + c.siteDomain + ' — ' + c.violationType + ' (' + c.severity + ') — ' + c.evidenceIds.length + ' evidence records</div>';
+        });
+      }
+
+      loadDashboard();
+      loadViolations();
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Run Rules Evaluation';
+      log.innerHTML += '<div class="log-entry" style="color:var(--accent)">Error: ' + err.message + '</div>';
+    });
+}
+
+function confirmViolation(id) {
+  fetch(API + '/violations/' + id + '/confirm', { method: 'POST', headers: headers() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loadViolations();
+      loadDashboard();
+    });
+}
+
+function rejectViolation(id) {
+  fetch(API + '/violations/' + id + '/reject', { method: 'POST', headers: headers() })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+      loadViolations();
+      loadDashboard();
+    });
+}
+
+function updateStatus(id, status) {
+  fetch(API + '/violations/' + id + '/status', {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ status: status }),
+  })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+      loadViolations();
+      loadDashboard();
+    });
+}
+
+function renderClock(deadline) {
+  if (!deadline) return '';
+  var now = new Date().getTime();
+  var end = new Date(deadline).getTime();
+  var diff = end - now;
+
+  if (diff <= 0) {
+    var overdue = Math.floor(-diff / (1000 * 60 * 60));
+    return '<span class="clock-expired">OVERDUE ' + overdue + 'h</span>';
+  }
+
+  var hours = Math.floor(diff / (1000 * 60 * 60));
+  var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  return '<span class="clock">' + hours + 'h ' + mins + 'm remaining</span>';
+}
+
+function formatTime(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit'});
+}
+
+function esc(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+// Auto-refresh clock displays every 30s
+setInterval(function() {
+  if (document.getElementById('console').style.display !== 'none') {
+    loadViolations();
+  }
+}, 30000);
+</script>
+</body>
+</html>

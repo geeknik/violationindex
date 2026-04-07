@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Violation Index — The Public Record of Privacy Misconduct</title>
+<meta name="description" content="Violation Index is the canonical public record of privacy misconduct. Evidence-backed, human-reviewed, permanently archived.">
+<meta name="robots" content="index, follow">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--surface:#111;--border:#1a1a1a;
+  --text:#c8c8c8;--dim:#666;--white:#e8e8e8;
+  --accent:#d42020;--accent-dim:#6b1010;
+  --green:#22c55e;--yellow:#eab308;
+  --mono:'SF Mono','Cascadia Code','Fira Code','Consolas','Liberation Mono',monospace;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--accent);text-decoration:none;transition:color .15s}
+a:hover{color:var(--white)}
+
+.top-bar{
+  border-bottom:1px solid var(--border);padding:1rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;font-size:.75rem;color:var(--dim);
+}
+.status-indicator{display:inline-flex;align-items:center;gap:.5rem}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+main{flex:1;max-width:960px;margin:0 auto;padding:3rem 2rem;width:100%}
+
+h1{font-size:1.5rem;font-weight:700;color:var(--white);letter-spacing:-.02em;margin-bottom:.25rem}
+.tagline{font-size:.875rem;color:var(--dim);margin-bottom:2rem;border-left:2px solid var(--accent);padding-left:1rem}
+
+.index-header{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:2rem}
+.index-stat{background:var(--surface);border:1px solid var(--border);padding:1rem}
+.index-stat-label{font-size:.5625rem;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)}
+.index-stat-value{font-size:1.75rem;font-weight:700;color:var(--white);margin-top:.25rem}
+.index-stat-value.alert{color:var(--accent)}
+
+.section-label{font-size:.625rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.75rem}
+
+.index-table{width:100%;border-collapse:collapse;font-size:.8125rem;margin-bottom:2rem}
+.index-table th{
+  text-align:left;padding:.5rem .75rem;border-bottom:2px solid var(--border);
+  font-size:.5625rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);
+}
+.index-table td{padding:.75rem;border-bottom:1px solid var(--border)}
+.index-table tr:hover{background:var(--surface)}
+
+.severity{display:inline-block;padding:.125rem .5rem;font-size:.6875rem;border:1px solid}
+.severity-critical{color:var(--accent);border-color:var(--accent-dim)}
+.severity-high{color:var(--accent);border-color:var(--accent-dim)}
+.severity-medium{color:var(--yellow);border-color:#6b5a08}
+.severity-low{color:var(--dim);border-color:var(--border)}
+
+.status-badge{display:inline-block;padding:.125rem .5rem;font-size:.6875rem;border:1px solid var(--border)}
+.status-active{color:var(--accent);border-color:var(--accent-dim)}
+.status-remediated{color:var(--green);border-color:#166534}
+.status-disputed{color:var(--yellow);border-color:#6b5a08}
+.status-escalated_tier2{color:var(--accent);border-color:var(--accent);font-weight:700}
+
+.clock{font-variant-numeric:tabular-nums}
+.clock-overdue{color:var(--accent);font-weight:700}
+.clock-active{color:var(--yellow)}
+.clock-na{color:var(--dim)}
+
+.cost-signal{font-size:.75rem;color:var(--dim);margin-top:.25rem}
+.cost-amount{color:var(--yellow)}
+
+.precedent{background:var(--surface);border:1px solid var(--border);padding:1rem;margin-bottom:2rem}
+.precedent-title{font-size:.625rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.5rem}
+.precedent-item{font-size:.8125rem;padding:.25rem 0;display:flex;justify-content:space-between}
+.precedent-amount{color:var(--yellow);font-weight:600}
+
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--dim)}
+.empty-state h2{color:var(--white);font-size:1rem;margin-bottom:.75rem}
+.empty-state p{font-size:.875rem;max-width:40ch;margin:0 auto .5rem}
+
+.how-it-works{margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)}
+.pipeline{display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.75rem;margin-bottom:2rem}
+.pipeline-step{font-size:.6875rem;padding:.25rem .625rem;background:var(--surface);border:1px solid var(--border);color:var(--dim)}
+.pipeline-arrow{color:var(--accent-dim);display:flex;align-items:center;font-size:.6875rem}
+
+.network{
+  margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);
+  font-size:.6875rem;color:var(--dim);display:flex;flex-wrap:wrap;gap:1.5rem;
+}
+.network-link{display:flex;flex-direction:column;gap:.125rem}
+.network-link span{font-size:.5625rem;text-transform:uppercase;letter-spacing:.08em}
+
+footer{border-top:1px solid var(--border);padding:1rem 2rem;font-size:.625rem;color:var(--dim);text-align:center}
+
+@media(max-width:640px){
+  main{padding:2rem 1rem}
+  .index-header{grid-template-columns:1fr}
+  .top-bar{padding:.75rem 1rem;flex-direction:column;gap:.5rem}
+  .index-table{font-size:.75rem}
+  .pipeline-arrow{display:none}
+  .pipeline{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div>VIOLATION INDEX</div>
+  <div class="status-indicator">
+    <span class="status-dot"></span>
+    <span id="system-status">LOADING</span>
+  </div>
+</div>
+
+<main>
+  <h1>Violation Index</h1>
+  <div class="tagline">The public record of privacy misconduct</div>
+
+  <div class="index-header">
+    <div class="index-stat">
+      <div class="index-stat-label">Active Violations</div>
+      <div class="index-stat-value alert" id="stat-active">-</div>
+    </div>
+    <div class="index-stat">
+      <div class="index-stat-label">Sites Tracked</div>
+      <div class="index-stat-value" id="stat-sites">-</div>
+    </div>
+    <div class="index-stat">
+      <div class="index-stat-label">Total Evidence</div>
+      <div class="index-stat-value" id="stat-evidence">-</div>
+    </div>
+  </div>
+
+  <div class="section-label">Public Record</div>
+  <div id="violations-container">
+    <div class="empty-state"><h2>Loading the record...</h2></div>
+  </div>
+
+  <div class="precedent">
+    <div class="precedent-title">Comparable Enforcement Actions</div>
+    <div class="precedent-item"><span>GoodRx &mdash; FTC (sharing health data with advertisers)</span><span class="precedent-amount">$25,000,000</span></div>
+    <div class="precedent-item"><span>Advocate Aurora Health &mdash; OCR HIPAA (tracking pixels)</span><span class="precedent-amount">$12,250,000</span></div>
+    <div class="precedent-item"><span>Sephora &mdash; CA AG CCPA (failing to process opt-outs)</span><span class="precedent-amount">$1,200,000</span></div>
+    <div class="precedent-item"><span>BetterHelp &mdash; FTC (sharing therapy data with advertisers)</span><span class="precedent-amount">$7,800,000</span></div>
+  </div>
+
+  <div class="how-it-works">
+    <div class="section-label">How It Works</div>
+    <div class="pipeline">
+      <span class="pipeline-step">Observe</span><span class="pipeline-arrow">&rarr;</span>
+      <span class="pipeline-step">Prove</span><span class="pipeline-arrow">&rarr;</span>
+      <span class="pipeline-step">Confirm</span><span class="pipeline-arrow">&rarr;</span>
+      <span class="pipeline-step">Index</span><span class="pipeline-arrow">&rarr;</span>
+      <span class="pipeline-step">Clock Starts</span><span class="pipeline-arrow">&rarr;</span>
+      <span class="pipeline-step">Escalate</span><span class="pipeline-arrow">&rarr;</span>
+      <span class="pipeline-step">Resolve</span>
+    </div>
+    <p style="font-size:.8125rem;color:var(--dim);max-width:60ch">
+      Every entry is evidence-backed, human-reviewed, and permanently archived.
+      When a company's behavior contradicts its privacy policy, it appears here &mdash; and the 72-hour accountability clock starts.
+      Fix it, dispute it, or let silence become the record.
+    </p>
+  </div>
+
+  <div class="network">
+    <div class="network-link"><span>Investigations</span><a href="https://datamisconduct.com">datamisconduct.com</a></div>
+    <div class="network-link"><span>Detection</span><a href="https://consent.watch">consent.watch</a></div>
+  </div>
+</main>
+
+<footer>Violation Index &mdash; The enforcement layer before enforcement</footer>
+
+<script>
+var API = 'https://api.violationindex.com/api/v1';
+
+function loadIndex() {
+  fetch(API + '/violations/public')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var violations = data.violations || [];
+      var active = violations.filter(function(v) { return v.status === 'active' || v.status === 'escalated_tier2'; });
+      var totalEvidence = 0;
+      violations.forEach(function(v) { totalEvidence += v.evidence_count || 0; });
+
+      document.getElementById('stat-active').textContent = active.length;
+      document.getElementById('stat-sites').textContent = new Set(violations.map(function(v) { return v.site_domain; })).size;
+      document.getElementById('stat-evidence').textContent = totalEvidence;
+      document.getElementById('system-status').textContent = active.length > 0 ? 'ACTIVE \u2014 ' + active.length + ' OPEN' : 'MONITORING';
+
+      if (violations.length === 0) {
+        document.getElementById('violations-container').innerHTML =
+          '<div class="empty-state"><h2>No confirmed violations yet</h2>' +
+          '<p>The system is actively collecting and analyzing evidence. First cases are under review.</p></div>';
+        return;
+      }
+
+      var html = '<table class="index-table"><thead><tr>' +
+        '<th>#</th><th>Site</th><th>Violation</th><th>Severity</th>' +
+        '<th>Evidence</th><th>Clock</th><th>Status</th></tr></thead><tbody>';
+
+      violations.forEach(function(v, i) {
+        var typeLabel = v.violation_type === 'preconsent_marketing_transfer'
+          ? 'Pre-consent marketing transfer' : 'GPC signal ignored';
+        var costHtml = renderCost(v);
+
+        html += '<tr>' +
+          '<td style="color:var(--dim)">' + (i + 1) + '</td>' +
+          '<td style="color:var(--white);font-weight:600">' + esc(v.site_domain) + costHtml + '</td>' +
+          '<td>' + typeLabel + '</td>' +
+          '<td><span class="severity severity-' + esc(v.severity) + '">' + esc(v.severity).toUpperCase() + '</span></td>' +
+          '<td>' + v.evidence_count + '</td>' +
+          '<td>' + renderClock(v) + '</td>' +
+          '<td><span class="status-badge status-' + esc(v.status) + '">' + formatStatus(v.status) + '</span></td></tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('violations-container').innerHTML = html;
+    })
+    .catch(function() { document.getElementById('system-status').textContent = 'ERROR'; });
+}
+
+function renderClock(v) {
+  if (v.status === 'remediated') return '<span class="clock-na">RESOLVED</span>';
+  if (!v.clock_started_at || !v.response_deadline) return '<span class="clock-na">--</span>';
+  var diff = new Date(v.response_deadline).getTime() - Date.now();
+  if (diff <= 0) {
+    var days = Math.floor(-diff / 86400000);
+    var hrs = Math.floor((-diff % 86400000) / 3600000);
+    return '<span class="clock-overdue">NO RESPONSE \u2014 ' + (days > 0 ? days + 'd ' : '') + hrs + 'h</span>';
+  }
+  return '<span class="clock-active">' + Math.floor(diff / 3600000) + 'h ' + Math.floor((diff % 3600000) / 60000) + 'm</span>';
+}
+
+function renderCost(v) {
+  if (!v.estimated_exposure_min && !v.estimated_exposure_max) return '';
+  return '<div class="cost-signal">Est. exposure: <span class="cost-amount">$' +
+    fmt(v.estimated_exposure_min) + ' \u2014 $' + fmt(v.estimated_exposure_max) + '</span></div>';
+}
+
+function formatStatus(s) {
+  var m = {active:'ACTIVE',remediated:'REMEDIATED',disputed:'DISPUTED',escalated_tier2:'ESCALATED'};
+  return m[s] || s.toUpperCase();
+}
+
+function fmt(n) {
+  if (!n) return '0';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0)+'K';
+  return String(n);
+}
+
+function esc(s) { if(!s)return''; var d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+
+loadIndex();
+setInterval(loadIndex, 60000);
+</script>
+</body>
+</html>

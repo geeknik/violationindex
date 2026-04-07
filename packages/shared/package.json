@@ -1,0 +1,22 @@
+{
+  "name": "@violation-index/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./types": "./dist/types.js",
+    "./schema": "./dist/schema.js",
+    "./crypto": "./dist/crypto.js",
+    "./trackers": "./dist/trackers.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/tests/"
+  },
+  "dependencies": {
+    "zod": "3.24.2"
+  }
+}

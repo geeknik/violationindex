@@ -1,0 +1,28 @@
+name = "violation-index-api"
+main = "packages/api/src/index.ts"
+compatibility_date = "2025-04-01"
+
+[build]
+command = "npm run build -w packages/shared"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "violation-index-db"
+database_id = "e58debb9-1e3e-4d9e-bf88-b1f2ce2f5ba6"
+migrations_dir = "migrations"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "3291d9abef1a417eba7064eeb98ed83b"
+
+[[routes]]
+pattern = "api.violationindex.com/*"
+zone_name = "violationindex.com"
+
+[vars]
+API_VERSION = "0.1.0"
+ENVIRONMENT = "production"
+
+# ALLOWED_IPS and ANALYST_TOKEN are set via `wrangler secret put` — not in this file.
+# ALLOWED_IPS = comma-separated list of authorized IPs for write endpoints
+# ANALYST_TOKEN = bearer token for analyst authentication

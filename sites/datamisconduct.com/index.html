@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Misconduct — Privacy Violations, Exposed</title>
+<meta name="description" content="Companies lie about your privacy. We prove it. Investigations, case breakdowns, and undeniable evidence of data misconduct.">
+<meta name="robots" content="index, follow">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#000;
+  --surface:#0a0a0a;
+  --border:#1a1a1a;
+  --text:#999;
+  --white:#fff;
+  --accent:#e01b1b;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.5;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+a{color:var(--accent);text-decoration:none;transition:color .15s}
+a:hover{color:var(--white)}
+
+header{
+  padding:1.5rem 2rem;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.wordmark{
+  font-size:.875rem;
+  font-weight:700;
+  color:var(--white);
+  letter-spacing:-.01em;
+}
+.header-link{
+  font-size:.75rem;
+  color:var(--text);
+}
+
+main{
+  flex:1;
+  max-width:800px;
+  margin:0 auto;
+  padding:6rem 2rem 4rem;
+  width:100%;
+}
+
+.hero h1{
+  font-size:clamp(2rem, 5vw, 3.25rem);
+  font-weight:800;
+  color:var(--white);
+  letter-spacing:-.03em;
+  line-height:1.1;
+  margin-bottom:1.5rem;
+}
+.hero h1 span{color:var(--accent)}
+
+.hero-sub{
+  font-size:1.125rem;
+  color:var(--text);
+  max-width:52ch;
+  margin-bottom:3rem;
+  line-height:1.6;
+}
+
+.divider{
+  width:3rem;
+  height:2px;
+  background:var(--accent);
+  margin:3rem 0;
+}
+
+.mission{margin-bottom:3rem}
+.mission h2{
+  font-size:.6875rem;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--accent);
+  margin-bottom:1rem;
+}
+.mission p{
+  font-size:.9375rem;
+  color:var(--text);
+  max-width:55ch;
+  line-height:1.7;
+}
+
+.teaser-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:1px;
+  background:var(--border);
+  border:1px solid var(--border);
+  margin-bottom:3rem;
+}
+.teaser{
+  background:var(--surface);
+  padding:1.5rem;
+}
+.teaser-label{
+  font-size:.625rem;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:var(--accent);
+  margin-bottom:.5rem;
+}
+.teaser h3{
+  font-size:1rem;
+  font-weight:700;
+  color:var(--white);
+  margin-bottom:.375rem;
+  line-height:1.3;
+}
+.teaser p{
+  font-size:.8125rem;
+  color:var(--text);
+  line-height:1.6;
+}
+.teaser-status{
+  display:inline-block;
+  margin-top:.75rem;
+  font-size:.6875rem;
+  color:var(--text);
+  padding:.2rem .5rem;
+  border:1px solid var(--border);
+}
+
+.cta-block{
+  padding:2rem;
+  border:1px solid var(--border);
+  background:var(--surface);
+  text-align:center;
+  margin-bottom:3rem;
+}
+.cta-block p{
+  font-size:.875rem;
+  color:var(--text);
+  margin-bottom:1rem;
+}
+.cta-link{
+  display:inline-block;
+  font-size:.875rem;
+  font-weight:600;
+  color:var(--white);
+  border-bottom:2px solid var(--accent);
+  padding-bottom:.125rem;
+}
+.cta-link:hover{color:var(--accent)}
+
+.quote{
+  border-left:3px solid var(--accent);
+  padding:1rem 0 1rem 1.5rem;
+  margin:3rem 0;
+}
+.quote p{
+  font-size:1.125rem;
+  font-weight:600;
+  color:var(--white);
+  font-style:italic;
+  line-height:1.5;
+}
+.quote cite{
+  display:block;
+  font-size:.75rem;
+  color:var(--text);
+  font-style:normal;
+  margin-top:.5rem;
+}
+
+.network{
+  padding-top:2rem;
+  border-top:1px solid var(--border);
+  font-size:.75rem;
+  color:var(--text);
+  display:flex;
+  flex-wrap:wrap;
+  gap:2rem;
+}
+.network-item{display:flex;flex-direction:column;gap:.125rem}
+.network-item span{
+  font-size:.5625rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--text);
+}
+
+footer{
+  border-top:1px solid var(--border);
+  padding:1rem 2rem;
+  font-size:.6875rem;
+  color:var(--text);
+  text-align:center;
+  font-family:var(--sans);
+}
+
+@media(min-width:600px){
+  .teaser-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:520px){
+  main{padding:3rem 1rem}
+  header{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">DATA MISCONDUCT</div>
+  <a class="header-link" href="https://violationindex.com">Violation Index &rarr;</a>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Companies lie about your privacy.<br><span>We prove it.</span></h1>
+    <p class="hero-sub">Investigations backed by evidence, not speculation. When a company's privacy policy says one thing and their code does another, we document every contradiction &mdash; and publish the proof.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="mission">
+    <h2>The Mission</h2>
+    <p>Data Misconduct is the investigative arm of Violation Index. We take confirmed violations and tell the full story: who did it, how it works, how many people were affected, and what it means. Every investigation is built on an evidence chain that can withstand legal scrutiny.</p>
+  </div>
+
+  <div class="teaser-grid">
+    <div class="teaser">
+      <div class="teaser-label">Investigation</div>
+      <h3>Pre-Consent Tracking</h3>
+      <p>Sites that fire marketing trackers before you ever see a consent banner. Thousands of sessions. Exposed.</p>
+      <span class="teaser-status">Coming Soon</span>
+    </div>
+    <div class="teaser">
+      <div class="teaser-label">Investigation</div>
+      <h3>GPC Signal Ignored</h3>
+      <p>Your browser says "do not sell." They sell anyway. We have the receipts.</p>
+      <span class="teaser-status">Coming Soon</span>
+    </div>
+    <div class="teaser">
+      <div class="teaser-label">Case Format</div>
+      <h3>Evidence-Grade Reports</h3>
+      <p>Timestamped requests, consent state, policy snapshots, contradiction mapping. Built for journalists and regulators.</p>
+      <span class="teaser-status">Standard</span>
+    </div>
+    <div class="teaser">
+      <div class="teaser-label">Distribution</div>
+      <h3>Dossiers &amp; Briefs</h3>
+      <p>Every confirmed case produces journalist briefs, regulator packets, and plaintiff intake materials.</p>
+      <span class="teaser-status">Standard</span>
+    </div>
+  </div>
+
+  <div class="quote">
+    <p>&ldquo;Retailer X says they don't track you without consent. Here's 4,821 violations proving otherwise.&rdquo;</p>
+    <cite>&mdash; The kind of headline we publish</cite>
+  </div>
+
+  <div class="cta-block">
+    <p>Every investigation is backed by the public record.</p>
+    <a class="cta-link" href="https://violationindex.com">View the Violation Index &rarr;</a>
+  </div>
+
+  <div class="network">
+    <div class="network-item">
+      <span>Public Record</span>
+      <a href="https://violationindex.com">violationindex.com</a>
+    </div>
+    <div class="network-item">
+      <span>Detection</span>
+      <a href="https://consent.watch">consent.watch</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Data Misconduct &mdash; Privacy violations, exposed
+</footer>
+
+</body>
+</html>

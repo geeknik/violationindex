@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>consent.watch — See Who Tracks You Before You Consent</title>
+<meta name="description" content="See which sites track you before you ever click 'Accept.' A browser extension that detects pre-consent privacy violations in real time.">
+<meta name="robots" content="index, follow">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090b;
+  --surface:#111113;
+  --border:#1c1c1f;
+  --text:#a0a0a8;
+  --white:#ededf0;
+  --accent:#3b82f6;
+  --accent-glow:rgba(59,130,246,.08);
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.6;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+a{color:var(--accent);text-decoration:none;transition:color .15s}
+a:hover{color:var(--white)}
+
+header{
+  padding:1.25rem 2rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.wordmark{
+  font-size:.875rem;
+  font-weight:600;
+  color:var(--white);
+}
+.wordmark span{color:var(--accent)}
+.header-nav{font-size:.75rem;color:var(--text)}
+
+main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:4rem 2rem;
+  text-align:center;
+}
+
+.hero{max-width:560px;margin-bottom:3rem}
+.hero h1{
+  font-size:clamp(1.75rem, 4.5vw, 2.75rem);
+  font-weight:700;
+  color:var(--white);
+  letter-spacing:-.02em;
+  line-height:1.15;
+  margin-bottom:1.25rem;
+}
+.hero p{
+  font-size:1.0625rem;
+  color:var(--text);
+  max-width:44ch;
+  margin:0 auto 2.5rem;
+  line-height:1.7;
+}
+
+.cta-button{
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  background:var(--accent);
+  color:#fff;
+  font-size:.9375rem;
+  font-weight:600;
+  padding:.75rem 2rem;
+  border:none;
+  cursor:pointer;
+  transition:background .15s,transform .1s;
+}
+.cta-button:hover{background:#2563eb;color:#fff;transform:translateY(-1px)}
+.cta-sub{
+  display:block;
+  margin-top:.75rem;
+  font-size:.75rem;
+  color:var(--text);
+}
+
+.how-it-works{
+  max-width:560px;
+  width:100%;
+  margin:0 auto 3rem;
+}
+.how-label{
+  font-size:.625rem;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--accent);
+  margin-bottom:1.5rem;
+}
+
+.steps{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:1px;
+  background:var(--border);
+  border:1px solid var(--border);
+  text-align:left;
+}
+.step{
+  background:var(--surface);
+  padding:1.25rem 1.5rem;
+  display:flex;
+  gap:1rem;
+  align-items:flex-start;
+}
+.step-num{
+  font-size:.75rem;
+  font-weight:700;
+  color:var(--accent);
+  min-width:1.5rem;
+  padding-top:.125rem;
+}
+.step-content h3{
+  font-size:.875rem;
+  font-weight:600;
+  color:var(--white);
+  margin-bottom:.25rem;
+}
+.step-content p{
+  font-size:.8125rem;
+  color:var(--text);
+  line-height:1.5;
+}
+
+.trust-bar{
+  max-width:560px;
+  width:100%;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:1.5rem;
+  padding:1.5rem 0;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  margin-bottom:3rem;
+}
+.trust-item{
+  font-size:.6875rem;
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  gap:.375rem;
+}
+.trust-check{color:var(--accent);font-size:.75rem}
+
+.network{
+  font-size:.75rem;
+  color:var(--text);
+  display:flex;
+  flex-wrap:wrap;
+  gap:2rem;
+  justify-content:center;
+}
+.network-item{display:flex;flex-direction:column;gap:.125rem;align-items:center}
+.network-item span{
+  font-size:.5625rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+footer{
+  border-top:1px solid var(--border);
+  padding:1rem 2rem;
+  font-size:.6875rem;
+  color:var(--text);
+  text-align:center;
+}
+
+@media(max-width:520px){
+  main{padding:3rem 1rem}
+  header{padding:1rem}
+  .step{flex-direction:column;gap:.5rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">consent<span>.</span>watch</div>
+  <nav class="header-nav">
+    <a href="https://violationindex.com">Violation Index &rarr;</a>
+  </nav>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>See who tracks you before you consent.</h1>
+    <p>Most sites start tracking you before the consent banner even loads. Our browser extension catches them in the act &mdash; and builds the evidence.</p>
+    <a class="cta-button" href="#notify">Get Notified at Launch</a>
+    <span class="cta-sub">Firefox extension &middot; Free &middot; No account required</span>
+  </div>
+
+  <div class="how-it-works">
+    <div class="how-label">How It Works</div>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-content">
+          <h3>Install the extension</h3>
+          <p>Lightweight Firefox add-on. No account, no data collection, no tracking.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-content">
+          <h3>Browse normally</h3>
+          <p>The extension monitors network requests and detects trackers that fire before you interact with any consent mechanism.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-content">
+          <h3>See the violations</h3>
+          <p>Clear, timestamped evidence of pre-consent tracking. You decide whether to contribute the data to the public record.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trust-bar">
+    <div class="trust-item"><span class="trust-check">&#10003;</span> No data stored on our servers</div>
+    <div class="trust-item"><span class="trust-check">&#10003;</span> Client-side hashing only</div>
+    <div class="trust-item"><span class="trust-check">&#10003;</span> User-controlled uploads</div>
+    <div class="trust-item"><span class="trust-check">&#10003;</span> Open public data spec</div>
+  </div>
+
+  <div class="network">
+    <div class="network-item">
+      <span>Public Record</span>
+      <a href="https://violationindex.com">violationindex.com</a>
+    </div>
+    <div class="network-item">
+      <span>Investigations</span>
+      <a href="https://datamisconduct.com">datamisconduct.com</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  consent.watch &mdash; Part of the Violation Index network
+</footer>
+
+</body>
+</html>
