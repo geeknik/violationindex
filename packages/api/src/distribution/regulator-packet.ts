@@ -1,4 +1,5 @@
 import type { ViolationBundle } from './types.js';
+import { US_STATE_PRIVACY_LAWS, GPC_MANDATED_STATES, getApplicableLaws } from '@violation-index/shared/jurisdiction';
 
 /**
  * Generate a regulator complaint packet.
@@ -114,11 +115,41 @@ export function generateRegulatorPacket(bundle: ViolationBundle): string {
   lines.push('  A privacy policy that claims consent-based data collection while the');
   lines.push('  site collects data without consent constitutes a deceptive practice.');
   lines.push('');
-  lines.push('### State (California)');
-  lines.push('- **CCPA/CPRA (Cal. Civ. Code 1798.100 et seq.):** Requires businesses to');
-  lines.push('  honor opt-out requests. GPC constitutes a valid opt-out signal.');
-  lines.push('- **Penalties:** $2,500 per unintentional violation; $7,500 per intentional violation.');
+
+  // Dynamic state law section based on violation type
+  var applicableLaws = getApplicableLaws(v.violation_type as 'preconsent_marketing_transfer' | 'gpc_ignored');
+  lines.push('### State Privacy Laws (' + applicableLaws.length + ' jurisdictions)');
   lines.push('');
+
+  if (v.violation_type === 'gpc_ignored') {
+    lines.push('**GPC-mandated states** (ignoring GPC is a per-user violation):');
+    lines.push('');
+    for (var gi = 0; gi < applicableLaws.length; gi++) {
+      var gLaw = applicableLaws[gi];
+      var gFine = gLaw.finePerViolation ? '$' + gLaw.finePerViolation.toLocaleString() : 'unspecified';
+      var gFineMax = gLaw.finePerIntentionalViolation ? '$' + gLaw.finePerIntentionalViolation.toLocaleString() : gFine;
+      lines.push('- **' + gLaw.stateName + ' (' + gLaw.lawAbbreviation + '):** ' +
+        gFine + '/violation (up to ' + gFineMax + ' intentional)' +
+        (gLaw.curePeriodDays ? ' — ' + gLaw.curePeriodDays + '-day cure period' : ' — no cure period'));
+    }
+  } else {
+    lines.push('**States with targeted advertising opt-out requirements:**');
+    lines.push('');
+    // Show top 5 most relevant + California always
+    var topStates = applicableLaws.filter(function(l) { return l.state === 'CA' || l.finePerViolation !== null; }).slice(0, 8);
+    for (var si = 0; si < topStates.length; si++) {
+      var sLaw = topStates[si];
+      var sFine = sLaw.finePerViolation ? '$' + sLaw.finePerViolation.toLocaleString() : 'unspecified';
+      var sFineMax = sLaw.finePerIntentionalViolation ? '$' + sLaw.finePerIntentionalViolation.toLocaleString() : sFine;
+      lines.push('- **' + sLaw.stateName + ' (' + sLaw.lawAbbreviation + '):** ' +
+        sFine + '/violation (up to ' + sFineMax + ' intentional)');
+    }
+    if (applicableLaws.length > topStates.length) {
+      lines.push('- ...and ' + (applicableLaws.length - topStates.length) + ' additional state jurisdictions');
+    }
+  }
+  lines.push('');
+
   lines.push('### European Union');
   lines.push('- **GDPR (Regulation 2016/679):** Article 6 — lawful basis required for processing.');
   lines.push('  Article 7 — consent must be freely given, specific, informed, and unambiguous.');

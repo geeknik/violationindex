@@ -1,4 +1,5 @@
 import type { RuleEvaluationResult } from '@violation-index/shared';
+import { GPC_MANDATED_STATES, getGpcMandateSummary } from '@violation-index/shared/jurisdiction';
 
 interface EvidenceRow {
   id: string;
@@ -7,32 +8,31 @@ interface EvidenceRow {
   request_type: string;
   observed_at: string;
   session_id: string;
+  gpc_active: number;
 }
 
 /**
  * Rule: gpc_ignored
  *
  * Detects sites that ignore the Global Privacy Control signal.
- * GPC is a legally binding opt-out signal under CCPA/CPRA.
- * If a site receives GPC=1 but still fires marketing/tracker requests,
- * that is a potential violation.
+ * GPC is legally binding in 8 states: CA, CO, CT, OR, MT, DE, NE, NJ, MN, MD.
  *
- * Note: In Week 1, the extension doesn't yet tag evidence with GPC state.
- * This rule checks for pre-consent marketing on sites where the browser
- * has GPC enabled (which the content script detects as a consent mechanism).
- * A future extension update will add explicit gpc_active field.
+ * Evidence: extension records gpc_active=1 per evidence row.
+ * If gpc_active=1 AND marketing/tracker requests still fire,
+ * that is a per-user violation in every GPC-mandated jurisdiction.
  *
- * For now, this rule produces lower-confidence results that require
- * analyst verification of GPC status.
+ * Severity escalation:
+ * - HIGH if gpc_active confirmed AND 3+ tracker destinations
+ * - MEDIUM if gpc_active confirmed AND <3 destinations
+ * - MEDIUM if gpc_active not confirmed (requires analyst verification)
  */
 export async function evaluateGpcIgnored(
   db: D1Database,
 ): Promise<readonly RuleEvaluationResult[]> {
-  // Find pre-consent marketing evidence that may involve GPC
-  // This is a placeholder until the extension reports GPC state per-evidence
+  // Find pre-consent marketing evidence where GPC was active
   const rows = await db
     .prepare(
-      `SELECT id, site_domain, request_destination, request_type, observed_at, session_id
+      `SELECT id, site_domain, request_destination, request_type, observed_at, session_id, gpc_active
        FROM evidence
        WHERE consent_state = 'pre_consent'
          AND request_type IN ('marketing', 'tracker')
@@ -61,20 +61,31 @@ export async function evaluateGpcIgnored(
     const uniqueSessions = new Set(evidence.map((e) => e.session_id));
     const timestamps = evidence.map((e) => e.observed_at).sort();
     const uniqueDestinations = new Set(evidence.map((e) => e.request_destination));
+    const gpcConfirmed = evidence.some((e) => e.gpc_active === 1);
 
-    // GPC ignored is always at least medium severity — it's a legal signal
+    // Determine severity based on GPC confirmation and destination count
+    const severity = gpcConfirmed && uniqueDestinations.size >= 3 ? 'high' as const : 'medium' as const;
+    const confidence = gpcConfirmed ? 'high' as const : 'medium' as const;
+
+    // Build reason with legal citations
+    const legalCitation = gpcConfirmed
+      ? 'GPC signal was active (confirmed by extension). This constitutes a per-user violation in ' +
+        GPC_MANDATED_STATES.length + ' states (' + GPC_MANDATED_STATES.join(', ') + '). '
+      : 'GPC signal status requires analyst verification. If confirmed, ';
+
     results.push({
       violationType: 'gpc_ignored',
       siteDomain: domain,
-      severity: 'medium',
+      severity: severity,
       evidenceIds: evidence.map((e) => e.id),
       sessionCount: uniqueSessions.size,
       firstObserved: timestamps[0]!,
       lastObserved: timestamps[timestamps.length - 1]!,
-      confidence: 'medium',
-      reason: 'Marketing/tracker requests fired despite potential GPC signal. ' +
-        uniqueDestinations.size + ' destinations: ' + Array.from(uniqueDestinations).join(', ') +
-        '. Requires analyst verification of GPC status.',
+      confidence: confidence,
+      reason: legalCitation +
+        uniqueDestinations.size + ' tracker destinations fired despite opt-out: ' +
+        Array.from(uniqueDestinations).join(', ') + '. ' +
+        getGpcMandateSummary(),
     });
   }
 

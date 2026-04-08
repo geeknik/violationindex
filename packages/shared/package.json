@@ -10,7 +10,8 @@
     "./types": "./dist/types.js",
     "./schema": "./dist/schema.js",
     "./crypto": "./dist/crypto.js",
-    "./trackers": "./dist/trackers.js"
+    "./trackers": "./dist/trackers.js",
+    "./jurisdiction": "./dist/jurisdiction.js"
   },
   "scripts": {
     "build": "tsc",
